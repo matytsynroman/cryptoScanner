@@ -1,0 +1,2 @@
+# cryptoScanner
+CPU CryptoScanner
