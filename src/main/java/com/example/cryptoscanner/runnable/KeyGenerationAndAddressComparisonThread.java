@@ -1,19 +1,35 @@
-package com.example.cryptoscanner.multithreading;
+package com.example.cryptoscanner.runnable;
 
-import lombok.AllArgsConstructor;
+import com.example.cryptoscanner.service.FileService;
 import lombok.extern.slf4j.Slf4j;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.LegacyAddress;
 import org.bitcoinj.params.MainNetParams;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 
-@AllArgsConstructor
 @Slf4j
 public class KeyGenerationAndAddressComparisonThread implements Runnable {
+
+    private FileService fileService;
+
+    @Autowired
+    public KeyGenerationAndAddressComparisonThread(FileService fileService) {
+        this.fileService = fileService;
+    }
+
+    public KeyGenerationAndAddressComparisonThread(AtomicReference<BigInteger> counter, Long beforeTime, String low, String high, List<String> addresses) {
+        this.counter = counter;
+        this.beforeTime = beforeTime;
+        this.low = low;
+        this.high = high;
+        this.addresses = addresses;
+    }
+
 
     private static final MainNetParams MAIN_NET = new MainNetParams();
 
@@ -33,20 +49,24 @@ public class KeyGenerationAndAddressComparisonThread implements Runnable {
         BigInteger bigIntegerLow = new BigInteger(low, 16);
         BigInteger bigIntegerHigh = new BigInteger(high, 16);
 
-
         for (BigInteger i = bigIntegerHigh; i.compareTo(bigIntegerLow) >= 0; i = i.subtract(BigInteger.ONE)) {
+
+            if (addresses.isEmpty()) {
+                break;
+            }
+
             counter.set(counter.get().add(BigInteger.ONE));
             log.info("COUNTER = " + counter.get());
             log.info("TIME = " + (System.currentTimeMillis() - beforeTime) / 1000);
             byte[] keyBytes = hexStringToByteArray(String.format("%064x", i));
             ECKey ecKey = ECKey.fromPrivate(keyBytes);
             LegacyAddress address = LegacyAddress.fromKey(MAIN_NET, ecKey);
-//            log.info("address = " + address);
-//            log.info("privateKey = " + String.format("%064x", ecKey.getPrivKey()));
 
             if (addresses.contains(address.toString())) {
                 log.info("address = " + address);
                 log.info("privateKey = " + String.format("%064x", ecKey.getPrivKey()));
+                fileService.writeKeyPairs(address.toString(), String.format("%064x", ecKey.getPrivKey()));
+                addresses.remove(address.toString());
             }
         }
 

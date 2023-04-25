@@ -1,25 +1,27 @@
 package com.example.cryptoscanner.service;
 
-import com.example.cryptoscanner.multithreading.KeyGenerationAndAddressComparisonThread;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class GeneratorService {
 
-    private AtomicReference<BigInteger> counter = new AtomicReference<>(BigInteger.ZERO);
+    private final AtomicReference<BigInteger> counter = new AtomicReference<>(BigInteger.ZERO);
+
+    private final FileService fileService;
 
     @Autowired
-    private FileService fileService;
+    public GeneratorService(FileService fileService) {
+        this.fileService = fileService;
+    }
 
     public void findBTCAddressInRange(String reqRangeFilePath, String reqAddressFilePath) {
         try {
@@ -30,7 +32,7 @@ public class GeneratorService {
 
             List<String> fileRangeList = fileService.getListLines(reqRangeFilePath);
 
-            List<String> listAddresses = fileService.getListLines(reqAddressFilePath);
+            List<String> listAddresses = Collections.synchronizedList(fileService.getListLines(reqAddressFilePath));
 
             int availableProcessors = Runtime.getRuntime().availableProcessors() - 2;
 
@@ -59,17 +61,17 @@ public class GeneratorService {
 
             Thread[] threads = new Thread[availableProcessors];
 
-            for (int i = 0; i < availableProcessors; i++) {
-                threads[i] = new Thread(new KeyGenerationAndAddressComparisonThread(counter, beforeTime, String.format("%064x", parts.get(i)), String.format("%064x", parts.get(i + 1)), listAddresses));
-                threads[i].start();
-            }
-
-            for (int i = 0; i < availableProcessors; i++) {
-                threads[i].join();
-            }
+//            for (int i = 0; i < availableProcessors; i++) {
+//                threads[i] = new Thread(new KeyGenerationAndAddressComparisonThread(counter, beforeTime, String.format("%064x", parts.get(i)), String.format("%064x", parts.get(i + 1)), listAddresses));
+//                threads[i].start();
+//            }
+//
+//            for (int i = 0; i < availableProcessors; i++) {
+//                threads[i].join();
+//            }
 
             Long afterTime = System.currentTimeMillis();
-            log.info("RESULT TIME = " + (afterTime - beforeTime) / 1000);
+            log.info("Result time seconds = " + (afterTime - beforeTime) / 1000);
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
