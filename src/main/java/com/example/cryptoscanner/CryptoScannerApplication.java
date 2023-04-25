@@ -25,7 +25,7 @@ public class CryptoScannerApplication implements CommandLineRunner {
     @Override
     public void run(String... args) {
         try {
-            generatorService.findBTCAddressInRange(args[0], args[1]);
+            generatorService.findBTCAddressInRange(args[0], args[1], args[2]);
         } catch (Exception e) {
             log.error("CryptoScannerApplication error", e);
         }

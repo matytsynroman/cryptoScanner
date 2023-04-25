@@ -1,5 +1,8 @@
 package com.example.cryptoscanner.service;
 
+import com.example.cryptoscanner.runnable.KeyGenerationAndAddressComparisonThread;
+import com.example.cryptoscanner.runnable.ThreadWrapper;
+import com.example.cryptoscanner.runnable.TotalExecutionTimeLogger;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -8,6 +11,9 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Service
@@ -23,7 +29,7 @@ public class GeneratorService {
         this.fileService = fileService;
     }
 
-    public void findBTCAddressInRange(String reqRangeFilePath, String reqAddressFilePath) {
+    public void findBTCAddressInRange(String reqRangeFilePath, String reqAddressFilePath, String reqKeyPairsFilePath) {
         try {
 
             log.info("Started find BTC address in range...");
@@ -59,16 +65,24 @@ public class GeneratorService {
                 log.info("Part for processing #" + (i) + ": " + String.format("%064x", parts.get(i)));
             }
 
-            Thread[] threads = new Thread[availableProcessors];
+            ThreadWrapper[] threads = new ThreadWrapper[availableProcessors];
 
 //            for (int i = 0; i < availableProcessors; i++) {
 //                threads[i] = new Thread(new KeyGenerationAndAddressComparisonThread(counter, beforeTime, String.format("%064x", parts.get(i)), String.format("%064x", parts.get(i + 1)), listAddresses));
 //                threads[i].start();
 //            }
-//
+            for (int i = 0; i < availableProcessors; i++) {
+                threads[i] = new ThreadWrapper(new KeyGenerationAndAddressComparisonThread(fileService, counter, beforeTime, String.format("%064x", parts.get(i)), String.format("%064x", parts.get(i + 1)), listAddresses, reqKeyPairsFilePath));
+                new Thread(threads[i]).start();
+            }
+
 //            for (int i = 0; i < availableProcessors; i++) {
 //                threads[i].join();
 //            }
+
+            TotalExecutionTimeLogger logger = new TotalExecutionTimeLogger(threads, counter);
+            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+            executor.scheduleAtFixedRate(logger, 0, 5, TimeUnit.SECONDS);
 
             Long afterTime = System.currentTimeMillis();
             log.info("Result time seconds = " + (afterTime - beforeTime) / 1000);
