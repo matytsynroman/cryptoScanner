@@ -11,6 +11,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -67,25 +68,17 @@ public class GeneratorService {
 
             ThreadWrapper[] threads = new ThreadWrapper[availableProcessors];
 
-//            for (int i = 0; i < availableProcessors; i++) {
-//                threads[i] = new Thread(new KeyGenerationAndAddressComparisonThread(counter, beforeTime, String.format("%064x", parts.get(i)), String.format("%064x", parts.get(i + 1)), listAddresses));
-//                threads[i].start();
-//            }
+            CountDownLatch latch = new CountDownLatch(threads.length);
+
             for (int i = 0; i < availableProcessors; i++) {
-                threads[i] = new ThreadWrapper(new KeyGenerationAndAddressComparisonThread(fileService, counter, beforeTime, String.format("%064x", parts.get(i)), String.format("%064x", parts.get(i + 1)), listAddresses, reqKeyPairsFilePath));
+                threads[i] = new ThreadWrapper(new KeyGenerationAndAddressComparisonThread(fileService, counter, beforeTime, String.format("%064x", parts.get(i)), String.format("%064x", parts.get(i + 1)), listAddresses, reqKeyPairsFilePath), latch);
                 new Thread(threads[i]).start();
             }
 
-//            for (int i = 0; i < availableProcessors; i++) {
-//                threads[i].join();
-//            }
-
-            TotalExecutionTimeLogger logger = new TotalExecutionTimeLogger(threads, counter);
             ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+            TotalExecutionTimeLogger logger = new TotalExecutionTimeLogger(threads, counter, executor, latch);
             executor.scheduleAtFixedRate(logger, 0, 5, TimeUnit.SECONDS);
 
-            Long afterTime = System.currentTimeMillis();
-            log.info("Result time seconds = " + (afterTime - beforeTime) / 1000);
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }

@@ -2,20 +2,25 @@ package com.example.cryptoscanner.runnable;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.concurrent.CountDownLatch;
+
 @Slf4j
-public class ThreadWrapper implements Runnable {
+public class ThreadWrapper extends Thread {
 
-    private final Runnable target;
-    private long startTime = System.currentTimeMillis();
+    private final Runnable thread;
+    private final long startTime = System.currentTimeMillis();
+    private CountDownLatch latch;
 
-    public ThreadWrapper(Runnable target) {
-        this.target = target;
+    public ThreadWrapper(Runnable thread, CountDownLatch latch) {
+        this.thread = thread;
+        this.latch = latch;
     }
 
     @Override
     public void run() {
-        target.run();
+        thread.run();
         log.info("Execution time: {} s", (System.currentTimeMillis() - startTime) / 1000);
+        latch.countDown();
     }
 
     public long getExecutionTime() {
