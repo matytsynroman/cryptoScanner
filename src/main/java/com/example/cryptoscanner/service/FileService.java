@@ -1,32 +1,15 @@
 package com.example.cryptoscanner.service;
 
-import com.example.cryptoscanner.CryptoScannerApplication;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
 @Service
 public class FileService {
-
-    private static String keyPairFilePath;
-
-    static {
-        try {
-            keyPairFilePath = new File(
-                    CryptoScannerApplication.class.getProtectionDomain()
-                            .getCodeSource()
-                            .getLocation()
-                            .toURI()
-            ).getParentFile().getPath();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
-    }
 
     public List<String> getListLines(String reqFilePath) {
 
@@ -44,20 +27,19 @@ public class FileService {
         return listLines;
     }
 
-    public void writeKeyPairs(String address, String privateKey) {
-        File file = new File(keyPairFilePath + "/keyPairResult.txt");
-
+    public void writeKeyPairs(String address, String privateKey, String reqKeyPairsFilePath) {
+        File file = new File(reqKeyPairsFilePath);
         try {
             if (!file.exists()) {
                 file.createNewFile();
-                FileWriter writer = new FileWriter(file, true);
-                writer.write("address : privateKey");
             }
             FileWriter writer = new FileWriter(file, true);
-            writer.write(address + " : " + privateKey);
-            writer.close();
+            BufferedWriter bufferedWriter = new BufferedWriter(writer);
+            bufferedWriter.write(address + " : " + privateKey);
+            bufferedWriter.newLine();
+            bufferedWriter.close();
         } catch (IOException e) {
-            log.error(e.getMessage());
+            log.error("Error ", e);
         }
     }
 }

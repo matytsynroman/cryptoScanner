@@ -23,8 +23,11 @@ dependencies {
     implementation("org.web3j:core:5.0.0")
     implementation("org.apache.commons:commons-lang3:3.12.0")
     implementation("org.bitcoinj:bitcoinj-core:0.16.2")
-    implementation("ch.qos.logback:logback-core:1.4.7")
-    implementation("org.slf4j:slf4j-api:2.0.7")
+
+    implementation("ch.qos.logback:logback-core:1.2.6")
+    implementation("ch.qos.logback:logback-classic:1.2.6")
+    testImplementation("org.slf4j:slf4j-api:1.7.32")
+
 
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")

@@ -15,19 +15,15 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 public class KeyGenerationAndAddressComparisonThread implements Runnable {
 
-    private FileService fileService;
-
     @Autowired
-    public KeyGenerationAndAddressComparisonThread(FileService fileService) {
+    public KeyGenerationAndAddressComparisonThread(FileService fileService, AtomicReference<BigInteger> counter, Long beforeTime, String low, String high, List<String> addresses, String reqKeyPairsFilePath) {
         this.fileService = fileService;
-    }
-
-    public KeyGenerationAndAddressComparisonThread(AtomicReference<BigInteger> counter, Long beforeTime, String low, String high, List<String> addresses) {
         this.counter = counter;
         this.beforeTime = beforeTime;
         this.low = low;
         this.high = high;
         this.addresses = addresses;
+        this.reqKeyPairsFilePath = reqKeyPairsFilePath;
     }
 
 
@@ -43,6 +39,10 @@ public class KeyGenerationAndAddressComparisonThread implements Runnable {
 
     private List<String> addresses;
 
+    private FileService fileService;
+
+    private String reqKeyPairsFilePath;
+
     @Override
     public void run() {
         log.info("Start KeyGenerationAndAddressComparisonThread with name" + Thread.currentThread().getName());
@@ -56,8 +56,8 @@ public class KeyGenerationAndAddressComparisonThread implements Runnable {
             }
 
             counter.set(counter.get().add(BigInteger.ONE));
-            log.info("COUNTER = " + counter.get());
-            log.info("TIME = " + (System.currentTimeMillis() - beforeTime) / 1000);
+//            log.info("COUNTER = " + counter.get());
+//            log.info("TIME = " + (System.currentTimeMillis() - beforeTime) / 1000);
             byte[] keyBytes = hexStringToByteArray(String.format("%064x", i));
             ECKey ecKey = ECKey.fromPrivate(keyBytes);
             LegacyAddress address = LegacyAddress.fromKey(MAIN_NET, ecKey);
@@ -65,7 +65,7 @@ public class KeyGenerationAndAddressComparisonThread implements Runnable {
             if (addresses.contains(address.toString())) {
                 log.info("address = " + address);
                 log.info("privateKey = " + String.format("%064x", ecKey.getPrivKey()));
-                fileService.writeKeyPairs(address.toString(), String.format("%064x", ecKey.getPrivKey()));
+                fileService.writeKeyPairs(address.toString(), String.format("%064x", ecKey.getPrivKey()), reqKeyPairsFilePath);
                 addresses.remove(address.toString());
             }
         }
