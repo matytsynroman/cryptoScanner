@@ -75,10 +75,14 @@ public class GeneratorService {
                 new Thread(threads[i]).start();
             }
 
+
             ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
             TotalExecutionTimeLogger logger = new TotalExecutionTimeLogger(threads, counter, executor, latch);
             executor.scheduleAtFixedRate(logger, 0, 5, TimeUnit.SECONDS);
 
+            Long afterTime = System.currentTimeMillis();
+
+            log.info("Result time seconds = " + (afterTime - beforeTime) / 1000);
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
